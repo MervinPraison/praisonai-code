@@ -152,6 +152,7 @@ export const providerNames = [
 	"roo",
 	// praisonaicode_change start
 	"praisonaicode",
+	"praisonai", // PraisonAI backend provider
 	"minimax",
 	"gemini-cli",
 	"virtual-quota-fallback",
@@ -460,6 +461,15 @@ const praisonaicodeSchema = baseProviderSettingsSchema.extend({
 	praisonaicodeTesterWarningsDisabledUntil: z.number().optional(), // Timestamp for disabling PRAISONAICODE-TESTER warnings
 })
 
+// PraisonAI backend provider schema
+const praisonaiSchema = baseProviderSettingsSchema.extend({
+	praisonaiBaseUrl: z.string().optional(), // Default: http://localhost:8005
+	praisonaiApiKey: z.string().optional(),
+	praisonaiModelId: z.string().optional(),
+	praisonaiAgentFile: z.string().optional(), // Path to agents.yaml
+	praisonaiFramework: z.string().optional(), // crewai, autogen, praisonai
+})
+
 export const virtualQuotaFallbackProfileDataSchema = z.object({
 	profileName: z.string().optional(),
 	profileId: z.string().optional(),
@@ -569,6 +579,7 @@ export const providerSettingsSchemaDiscriminated = z.discriminatedUnion("apiProv
 	// praisonaicode_change start
 	geminiCliSchema.merge(z.object({ apiProvider: z.literal("gemini-cli") })),
 	praisonaicodeSchema.merge(z.object({ apiProvider: z.literal("praisonaicode") })),
+	praisonaiSchema.merge(z.object({ apiProvider: z.literal("praisonai") })),
 	virtualQuotaFallbackSchema.merge(z.object({ apiProvider: z.literal("virtual-quota-fallback") })),
 	syntheticSchema.merge(z.object({ apiProvider: z.literal("synthetic") })),
 	inceptionSchema.merge(z.object({ apiProvider: z.literal("inception") })),
@@ -608,6 +619,7 @@ export const providerSettingsSchema = z.object({
 	// praisonaicode_change start
 	...geminiCliSchema.shape,
 	...praisonaicodeSchema.shape,
+	...praisonaiSchema.shape,
 	...virtualQuotaFallbackSchema.shape,
 	...syntheticSchema.shape,
 	...ovhcloudSchema.shape,
@@ -676,6 +688,7 @@ export const modelIdKeys = [
 	"vercelAiGatewayModelId",
 	"deepInfraModelId",
 	"praisonaicodeModel",
+	"praisonaiModelId", // PraisonAI backend
 	"ovhCloudAiEndpointsModelId", // praisonaicode_change
 	"inceptionLabsModelId", // praisonaicode_change
 	"sapAiCoreModelId", // praisonaicode_change
@@ -704,6 +717,7 @@ export const modelIdKeysByProvider: Record<TypicalProvider, ModelIdKey> = {
 	"nano-gpt": "nanoGptModelId", // praisonaicode_change
 	openrouter: "openRouterModelId",
 	praisonaicode: "praisonaicodeModel",
+	praisonai: "praisonaiModelId",
 	bedrock: "apiModelId",
 	vertex: "apiModelId",
 	"openai-native": "openAiModelId",
@@ -885,6 +899,7 @@ export const MODELS_BY_PROVIDER: Record<
 	ovhcloud: { id: "ovhcloud", label: "OVHcloud AI Endpoints", models: [] },
 	inception: { id: "inception", label: "Inception", models: [] },
 	praisonaicode: { id: "praisonaicode", label: "Praisonaicode", models: [] },
+	praisonai: { id: "praisonai", label: "PraisonAI", models: [] },
 	"virtual-quota-fallback": { id: "virtual-quota-fallback", label: "Virtual Quota Fallback", models: [] },
 	// praisonaicode_change end
 	deepinfra: { id: "deepinfra", label: "DeepInfra", models: [] },

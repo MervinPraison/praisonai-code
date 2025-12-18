@@ -51,6 +51,7 @@ import {
 	DeepInfraHandler,
 	MiniMaxHandler,
 	BasetenHandler,
+	PraisonAIHandler,
 } from "./providers"
 // praisonaicode_change start
 import { PraisonaicodeOpenrouterHandler } from "./providers/praisonaicode-openrouter"
@@ -244,6 +245,8 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new MiniMaxHandler(options)
 		case "baseten":
 			return new BasetenHandler(options)
+		case "praisonai":
+			return new PraisonAIHandler(options)
 		default:
 			apiProvider satisfies "gemini-cli" | undefined
 			return new AnthropicHandler(options)
