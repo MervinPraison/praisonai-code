@@ -1,0 +1,159 @@
+import { Anthropic } from "@anthropic-ai/sdk"
+import { parseMentions } from "./index"
+import { UrlContentFetcher } from "../../services/browser/UrlContentFetcher"
+import { FileContextTracker } from "../context-tracking/FileContextTracker"
+
+import { GlobalFileNames } from "../../shared/globalFileNames"
+import { ensureLocalPraisonairulesDirExists } from "../context/instructions/praisonai-rules"
+import { parsePraisonaiSlashCommands } from "../slash-commands/praisonai"
+import { refreshWorkflowToggles } from "../context/instructions/workflows" // praisonaicode_change
+
+import * as vscode from "vscode" // praisonaicode_change
+
+// This function is a duplicate of processUserContentMentions, but it adds a check for the newrules command
+// and processes Praisonai-specific slash commands. It should be merged with processUserContentMentions in the future.
+export async function processPraisonaiUserContentMentions({
+	context, // praisonaicode_change
+	userContent,
+	cwd,
+	urlContentFetcher,
+	fileContextTracker,
+	rooIgnoreController,
+	showRooIgnoredFiles = true,
+	includeDiagnosticMessages = true,
+	maxDiagnosticMessages = 50,
+	maxReadFileLine,
+}: {
+	context: vscode.ExtensionContext // praisonaicode_change
+	userContent: Anthropic.Messages.ContentBlockParam[]
+	cwd: string
+	urlContentFetcher: UrlContentFetcher
+	fileContextTracker: FileContextTracker
+	rooIgnoreController?: any
+	showRooIgnoredFiles: boolean
+	includeDiagnosticMessages?: boolean
+	maxDiagnosticMessages?: number
+	maxReadFileLine?: number
+}): Promise<[Anthropic.Messages.ContentBlockParam[], boolean]> {
+	// Track if we need to check praisonairules file
+	let needsRulesFileCheck = false
+
+	// praisonaicode_change
+	const mentionTagRegex = /<(?:task|feedback|answer|user_message)>/
+
+	const processUserContentMentions = async () => {
+		// Process userContent array, which contains various block types:
+		// TextBlockParam, ImageBlockParam, ToolUseBlockParam, and ToolResultBlockParam.
+		// We need to apply parseMentions() to:
+		// 1. All TextBlockParam's text (first user message with task)
+		// 2. ToolResultBlockParam's content/context text arrays if it contains
+		// "<feedback>" (see formatToolDeniedFeedback, attemptCompletion,
+		// executeCommand, and consecutiveMistakeCount >= 3) or "<answer>"
+		// (see askFollowupQuestion), we place all user generated content in
+		// these tags so they can effectively be used as markers for when we
+		// should parse mentions).
+
+		const { localWorkflowToggles, globalWorkflowToggles } = await refreshWorkflowToggles(context, cwd) // praisonaicode_change
+
+		return await Promise.all(
+			userContent.map(async (block) => {
+				// praisonaicode_change
+				const shouldProcessMentions = (text: string) => mentionTagRegex.test(text)
+
+				if (block.type === "text") {
+					if (shouldProcessMentions(block.text)) {
+						// praisonaicode_change begin: pull slash commands from Cline
+						const parsedText = await parseMentions(
+							block.text,
+							cwd,
+							urlContentFetcher,
+							fileContextTracker,
+							rooIgnoreController,
+							showRooIgnoredFiles,
+							includeDiagnosticMessages,
+							maxDiagnosticMessages,
+							maxReadFileLine,
+						)
+
+						// when parsing slash commands, we still want to allow the user to provide their desired context
+						const { processedText, needsRulesFileCheck: needsCheck } = await parsePraisonaiSlashCommands(
+							parsedText,
+							localWorkflowToggles, // praisonaicode_change
+							globalWorkflowToggles, // praisonaicode_change
+						)
+
+						if (needsCheck) {
+							needsRulesFileCheck = true
+						}
+
+						return {
+							...block,
+							text: processedText,
+						}
+						// praisonaicode_change end
+					}
+
+					return block
+				} else if (block.type === "tool_result") {
+					if (typeof block.content === "string") {
+						if (shouldProcessMentions(block.content)) {
+							return {
+								...block,
+								content: await parseMentions(
+									block.content,
+									cwd,
+									urlContentFetcher,
+									fileContextTracker,
+									rooIgnoreController,
+									showRooIgnoredFiles,
+									includeDiagnosticMessages,
+									maxDiagnosticMessages,
+									maxReadFileLine,
+								),
+							}
+						}
+
+						return block
+					} else if (Array.isArray(block.content)) {
+						const parsedContent = await Promise.all(
+							block.content.map(async (contentBlock) => {
+								if (contentBlock.type === "text" && shouldProcessMentions(contentBlock.text)) {
+									return {
+										...contentBlock,
+										text: await parseMentions(
+											contentBlock.text,
+											cwd,
+											urlContentFetcher,
+											fileContextTracker,
+											rooIgnoreController,
+											showRooIgnoredFiles,
+											includeDiagnosticMessages,
+											maxDiagnosticMessages,
+											maxReadFileLine,
+										),
+									}
+								}
+
+								return contentBlock
+							}),
+						)
+
+						return { ...block, content: parsedContent }
+					}
+
+					return block
+				}
+
+				return block
+			}),
+		)
+	}
+
+	const processedUserContent = await processUserContentMentions()
+
+	let praisonairulesError = false
+	if (needsRulesFileCheck) {
+		praisonairulesError = await ensureLocalPraisonairulesDirExists(cwd, GlobalFileNames.praisonaiRules)
+	}
+	return [processedUserContent, praisonairulesError]
+}

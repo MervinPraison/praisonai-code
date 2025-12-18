@@ -1,0 +1,5 @@
+export const X_PRAISONAICODE_VERSION = "X-PraisonaiCode-Version"
+export const X_PRAISONAICODE_ORGANIZATIONID = "X-PraisonaiCode-OrganizationId"
+export const X_PRAISONAICODE_TASKID = "X-PraisonaiCode-TaskId"
+export const X_PRAISONAICODE_PROJECTID = "X-PraisonaiCode-ProjectId"
+export const X_PRAISONAICODE_TESTER = "X-PRAISONAICODE-TESTER"

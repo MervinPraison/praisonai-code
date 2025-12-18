@@ -1,0 +1,21 @@
+{
+	"title": "الحساب",
+	"profilePicture": "صورة الملف الشخصي",
+	"unknownUser": "مستخدم غير معروف",
+	"logOut": "تسجيل الخروج",
+	"testApiAuthentication": "اختبار تحقق API",
+	"signIn": "اتصل بـ PraisonAI Code Cloud",
+	"connect": "اتصال",
+	"cloudBenefitsTitle": "الاتصال بـ PraisonAI Code Cloud",
+	"cloudBenefitsSubtitle": "زامن التعليمات والسجلات لتفعيل المزايا التالية:",
+	"cloudBenefitHistory": "سجل مهامك أونلاين",
+	"cloudBenefitSharing": "مزايا المشاركة والتعاون",
+	"cloudBenefitMetrics": "إحصائيات الاستخدام حسب المهام والتوكينات والتكلفة",
+	"visitCloudWebsite": "زيارة موقع PraisonAI Code Cloud",
+	"expandTask": "توسيع المهمة",
+	"collapseTask": "طي المهمة",
+	"deleteFavoritedTaskWarning": "هذا سيحذف المهمة المفضلة نهائيًا. هل أنت متأكد؟",
+	"cloudBenefitWalkaway": "تابع وتحكم في المهام من أي مكان باستخدام التحكم عن بعد في Praisonai",
+	"remoteControl": "التحكم عن بعد في Praisonai",
+	"remoteControlDescription": "تفعيل متابعة والتفاعل مع المهام في مساحة العمل هذه باستخدام PraisonAI Code Cloud"
+}

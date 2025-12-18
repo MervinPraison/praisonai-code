@@ -1,0 +1,58 @@
+import type { ProviderSettings } from "@roo-code/types"
+import { buildApiHandler, SingleCompletionHandler, ApiHandler } from "../api" //praisonaicode_change
+import { ApiStreamUsageChunk } from "../api/transform/stream" // praisonaicode_change
+
+/**
+ * Enhances a prompt using the configured API without creating a full Cline instance or task history.
+ * This is a lightweight alternative that only uses the API's completion functionality.
+ */
+export async function singleCompletionHandler(apiConfiguration: ProviderSettings, promptText: string): Promise<string> {
+	if (!promptText) {
+		throw new Error("No prompt text provided")
+	}
+	if (!apiConfiguration || !apiConfiguration.apiProvider) {
+		throw new Error("No valid API configuration provided")
+	}
+
+	const handler = buildApiHandler(apiConfiguration)
+
+	// Initialize handler if it has an initialize method
+	if ("initialize" in handler && typeof handler.initialize === "function") {
+		await handler.initialize()
+	}
+
+	// Check if handler supports single completions
+	if (!("completePrompt" in handler)) {
+		// praisonaicode_change start - stream responses for handlers without completePrompt
+		// throw new Error("The selected API provider does not support prompt enhancement")
+		return (await streamResponseFromHandler(handler, promptText)).text
+		// praisonaicode_change end
+	}
+
+	return (handler as SingleCompletionHandler).completePrompt(promptText)
+}
+
+// praisonaicode_change start - Stream responses using createMessage
+export async function streamResponseFromHandler(
+	handler: ApiHandler,
+	promptText: string,
+	systemPrompt = "",
+): Promise<{ text: string; usage?: ApiStreamUsageChunk }> {
+	const stream = handler.createMessage(systemPrompt, [
+		{ role: "user", content: [{ type: "text", text: promptText }] },
+	])
+
+	let text: string = ""
+	let usage: ApiStreamUsageChunk | undefined = undefined
+
+	for await (const chunk of stream) {
+		if (chunk.type === "text") {
+			text += chunk.text
+		} else if (chunk.type === "usage") {
+			usage = chunk
+		}
+	}
+
+	return { text, usage }
+}
+// praisonaicode_change end - streamResponseFromHandler
