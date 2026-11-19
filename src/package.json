@@ -762,7 +762,7 @@
 		"ws": "^8.18.0",
 		"xlsx": "^0.18.5",
 		"yaml": "^2.8.0",
-		"zod": "^3.25.61"
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@roo-code/build": "workspace:^",
